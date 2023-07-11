@@ -1,0 +1,19 @@
+#!/bin/bash
+# List authorized orgs and extract username and instance URL
+org_list=$(sf org auth list --json | jq -r '.result[] | {username: .username, instanceUrl: .instanceUrl}')
+# Prompt user to select an org
+echo "Select an org:"
+select org in $(echo "$org_list" | jq -r '.username'); do
+	# Get the selected org's username and instance URL
+	username=$(echo "$org_list" | jq -r --arg org "$org" 'select(.username == $org).username')
+	instance_url=$(echo "$org_list" | jq -r --arg org "$org" 'select(.username == $org).instanceUrl')
+	break
+done
+# Display user details and extract password
+user_details=$(sf org display user -u $username --json)
+password=$(echo $user_details | jq -r ".result.password")
+# Set the selected org as default
+echo "Username: $username"
+echo "Password: $password"
+
+sf org login web --instance-url $instance_url --set-default
